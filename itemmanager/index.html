@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>Item Manager</title>
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+  </head>
+  <body>
+
+    <nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
+      <a class="navbar-brand" href="#">Item Manager</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      
+    </nav>
+
+    <div class="container" style="padding-top: 100px;padding-bottom: 100px;">
+
+      <h1 id="formTitle">Add Item</h1>
+      <form id="itemForm" class="insertItem">
+        <div class="form-group">
+          <label for="text">Text</label>
+          <input type="text" id="text" class="form-control">
+        </div>
+        <div class="form-group">
+          <label for="text">Body</label>
+          <input type="text" id="body" class="form-control">
+        </div>
+        <input type="hidden" id="id" />
+        <div class="">
+          <input type="submit" value="Submit" class="btn btn-primary" />
+        </div>
+      </form>
+
+
+      <ul id="items" class="list-group">
+        <!--
+          Don't remove <ul> container
+          Items here will generate from jquery ajax
+        -->
+      </ul>
+
+    </div>
+
+
+    <script src="https://code.jquery.com/jquery-1.12.4.js" integrity="sha256-Qw82+bXyGq6MydymqBxNPYTaUXXq7c8v3CwiYwLLNXU=" crossorigin="anonymous"></script>
+    <script src="./js/bootstrap.min.js"></script>
+
+    <script type="text/javascript">
+        $(document).ready(function(){
+
+          getItems();
+
+          //Submit Event
+          $('#itemForm').on('submit', function(e){
+            e.preventDefault();
+            let id = $('#id').val();
+            let text = $('#text').val();
+            let body = $('#body').val();
+            if($(this).hasClass('insertItem')){
+              addItem(text, body);
+            } else {
+              updateItem(id, text, body);
+            }
+          });
+
+          // Delete Event
+          $('body').on('click', '.deleteLink', function(e){
+            e.preventDefault();
+
+            let id = $(this).data('id');
+
+            deleteItem(id);
+          });
+
+          //Update Item
+          $('body').on('click', '.updateLink', function(e){
+            e.preventDefault();
+
+            $('#itemForm').removeClass('insertItem');
+            $('#formTitle').html('Update Item');
+            let id = $(this).data('id');
+
+            $.ajax({
+              method: 'GET',
+              url: 'http://itemapi/api/items/'+id,
+            }).done(function(item){
+              $('#text').val(item.text);
+              $('#body').val(item.body);
+              $('#id').val(item.id);
+            });
+          });
+
+          //Update Item Using API
+          function updateItem(id, text, body){
+            $.ajax({
+              method: 'POST',
+              url:  'http://itemapi/api/items/'+id,
+              data: {
+                text: text,
+                body: body,
+                _method: 'PUT'
+              }
+            }).done(function(item){
+              alert('Item #: ' + id + ' Updated.');
+              location.reload();
+            });
+          }
+
+          // Delete Item through API
+          function deleteItem(id){
+            $.ajax({
+              method: 'POST',
+              url:  'http://itemapi/api/items/'+id,
+              data: {
+                _method: 'DELETE'
+              }
+            }).done(function(item){
+              alert("Item Removed");
+              location.reload();
+            });
+          }
+
+          // Insert Items Using API
+          function addItem(text, body){
+            $.ajax({
+              method: 'POST',
+              url: 'http://itemapi/api/items',
+              data: {
+                text: text,
+                body: body
+              }
+            }).done(function(item){
+              alert('Item #: ' + item.id + ' added.');
+              location.reload();
+            });
+          }
+
+          // Get Items From API
+          function getItems(){
+              $.ajax({
+                url: 'http://itemapi/api/items'
+              }).done(function(items){
+                  let output = '';
+                  $.each(items, function(key, item){
+                      output += `
+                        <li class="list-group-item">
+                          <strong>${item.text}: </strong>${item.body}
+                          <a href="#" class="deleteLink float-right" data-id="${item.id}">Delete</a>
+                          <span class="float-right"> | </span>
+                          <a href="#" class="updateLink float-right" data-id="${item.id}">Update</a>
+                        </li>
+                      `;
+                  });
+                  $('#items').append(output);
+              });
+          }
+
+        });
+    </script>
+  </body>
+</html>
